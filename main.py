@@ -58,8 +58,11 @@ async def count_command(ctx: Context, channel: discord.TextChannel):
     mostReactedMessages: list[tuple[int, discord.Message]] = []
 
     async for message in iterator:
+        # ignore the bot
+        if message.author == bot.user:
+            continue
         # count words, filtering out things which look like emojis (have a colon either side of the word)
-        emojis = re.findall("[:][a-zA-Z_~+0-9]*[:]", message.content)
+        emojis = re.findall("[:][a-zA-Z_~+0-9]+[:]", message.content)
         filtered = message.content
         for e in emojis:
             filtered = filtered.replace(e, "")
@@ -94,9 +97,9 @@ async def count_command(ctx: Context, channel: discord.TextChannel):
         for r in message.reactions:
             em = str(r.emoji)
             if em in reactionDict:
-                reactionDict[em] = r.count
-            else:
                 reactionDict[em] += r.count
+            else:
+                reactionDict[em] = r.count
         
         # count most reacted messages
         reactions = 0
@@ -114,8 +117,8 @@ async def count_command(ctx: Context, channel: discord.TextChannel):
     # make message
     msg = "\n".join(f"{ctx.message.guild.get_member(id).display_name}: {num}" for id, num in senders.items())
     msg += "\n" + "\n".join(f"{w}: {c}" for w, c in wordDictSorted)
-    msg += "\n" + "\n".join(f":{w}:: {c}" for w, c in emojiDictSorted)
-    msg += "\n" + "\n".join(f"w: {c}" for w, c in reactionDictSorted)
+    msg += "\n" + "\n".join(f"{w}: {c}" for w, c in emojiDictSorted)
+    msg += "\n" + "\n".join(f"{w}: {c}" for w, c in reactionDictSorted)
     await ctx.send(msg)
     for i, (reactions, message) in enumerate(mostReactedMessages):
         await ctx.send(f"#{i + 1} with {reactions} reaction{'s' if reactions > 1 else ''}.", reference=message, mention_author=False)
