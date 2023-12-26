@@ -6,8 +6,8 @@ import discord
 from discord import Intents, Activity, ActivityType
 from discord.ext.commands import Context, Bot, MissingPermissions, MissingRequiredArgument, CommandNotFound, EmojiConverter, EmojiNotFound
 from os import getenv
-from datetime import datetime
 from traceback import print_tb
+import datetime
 
 # create bot
 intents = Intents().all()
@@ -47,17 +47,45 @@ async def on_command_error(ctx, error):
 async def on_member_join(member: discord.Member):
 	pass
 
+from typing import TypeVar, Callable, Any
+T = TypeVar('T')
+def pprintMatrix(matrix: list[list[T]], prefix: str = "", spaces: int = 0, converter: Callable[[T], str] = str, returnAsString: bool = False) -> None | str:
+    s = [[converter(e) for e in row] for row in matrix]
+    lens = [max(map(len, col)) for col in zip(*s)]
+    fmt = (" " * spaces).join('{{:{}}}'.format(x) for x in lens)
+    table = [prefix + fmt.format(*row) for row in s]
+    res = '\n'.join(table)
+    if returnAsString:
+        return res
+    print(res)
+
+def splitIntoArray(array: list[Any], every: int) -> list[list[Any]]:
+    arr = []
+    for i in range(len(array) // every + 1):
+        t = [v[1] for v in zip(range(every), array[i * every : i * every + every])]
+        if t != []:
+            arr.append(t)
+    return arr
+
 import re
 @bot.command(name="count")
 async def count_command(ctx: Context, channel: discord.TextChannel):
-    iterator = channel.history(limit=None, after=datetime(year=2023,month=1,day=1))
+    # find the time
+    # need to account for leap years
+    currentTime = datetime.datetime.now()
+    yearLength = 365
+    if currentTime.year % 4 == 0 and (currentTime.year % 400 == 0 or currentTime.year % 100 != 0):
+        yearLength += 1
+    lastTime = currentTime - datetime.timedelta(days=yearLength)
+
+    messageIterator = channel.history(limit=None, after=lastTime)
     senders: dict[int, int] = {}
     wordDict: dict[str, int] = {}
     emojiDict: dict[str, int] = {}
     reactionDict: dict[str, int] = {}
     mostReactedMessages: list[tuple[int, discord.Message]] = []
 
-    async for message in iterator:
+    async for message in messageIterator:
         # ignore the bot
         if message.author == bot.user:
             continue
@@ -110,15 +138,27 @@ async def count_command(ctx: Context, channel: discord.TextChannel):
             mostReactedMessages = sorted(mostReactedMessages, key=lambda x: x[0], reverse=True)[:3]
 	
     # sort wordDict and stuff
-    wordDictSorted = sorted(list(wordDict.items()), key=lambda x: x[1], reverse=True)[:10]
+    sendersSorted = sorted(list(senders.items()), key=lambda x: x[1], reverse=True)[:5]
+    wordDictSorted = sorted(list(wordDict.items()), key=lambda x: x[1], reverse=True)[:20]
     emojiDictSorted = sorted(list(emojiDict.items()), key=lambda x: x[1], reverse=True)[:5]
-    reactionDictSorted = sorted(list(reactionDict.items()), key=lambda x: x[1], reverse=True)[:5]
+    reactionDictSorted = sorted(list(reactionDict.items()), key=lambda x: x[1], reverse=True)[:3]
+
+    splitWordDict = [[f"{a}: {b}" for a, b in line] for line in splitIntoArray(wordDictSorted, 4)]
+    if len(splitWordDict[-1]) < 4:
+        splitWordDict[-1].extend(["" for _ in range(4 - len(splitWordDict[-1]))])
 
     # make message
-    msg = "\n".join(f"{ctx.message.guild.get_member(id).display_name}: {num}" for id, num in senders.items())
-    msg += "\n" + "\n".join(f"{w}: {c}" for w, c in wordDictSorted)
-    msg += "\n" + "\n".join(f"{w}: {c}" for w, c in emojiDictSorted)
-    msg += "\n" + "\n".join(f"{w}: {c}" for w, c in reactionDictSorted)
+    msg = f"**--- Discord Stats from {lastTime.date()} to today ---**\n"
+    msg += "*Top 5 most sendiferous people on the server:*\n"
+    msg += "\n".join(f"    \\- {ctx.message.guild.get_member(id).display_name}: {num}" for id, num in sendersSorted)
+    msg += "\n*Top 20 most popular words:*\n```"
+    msg += pprintMatrix(splitWordDict, spaces=2, returnAsString=True)
+    msg += "```\n*Top 5 most popular emojis:*\n"
+    msg += "\n".join(f"    \\- {w}: {c}" for w, c in emojiDictSorted)
+    msg += "\n*Top 5 most popular reaction:*\n"
+    msg += "\n".join(f"    \\- {w}: {c}" for w, c in reactionDictSorted)
+    msg += "\n*Top 3 most reacted messages:*"
+    print(msg)
     await ctx.send(msg)
     for i, (reactions, message) in enumerate(mostReactedMessages):
         await ctx.send(f"#{i + 1} with {reactions} reaction{'s' if reactions > 1 else ''}.", reference=message, mention_author=False)
