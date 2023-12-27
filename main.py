@@ -8,6 +8,7 @@ from discord.ext.commands import Context, Bot, MissingPermissions, MissingRequir
 from os import getenv
 from traceback import print_tb
 import datetime
+import discord_emoji
 
 from utilities import *
 
@@ -50,6 +51,7 @@ async def on_member_join(member: discord.Member):
 	pass
 
 import re
+import emoji
 @bot.command(name="count")
 async def count_command(ctx: Context, channel: discord.TextChannel):
     # find the time
@@ -71,11 +73,21 @@ async def count_command(ctx: Context, channel: discord.TextChannel):
         # ignore the bot
         if message.author == bot.user:
             continue
+
         # count words, filtering out things which look like emojis (have a colon either side of the word)
-        emojis = re.findall("[:][a-zA-Z_~+0-9]+[:]", message.content)
+        emojis = re.findall("[<][:][a-zA-Z_~+0-9]+[:][0-9]+[>]", message.content)
         filtered = message.content
         for e in emojis:
             filtered = filtered.replace(e, "")
+
+        # add all the unicode emojis
+        filtered = emoji.demojize(filtered)
+        emojisTrue = re.findall("[:][a-zA-Z_~+0-9]+[:]", filtered)
+        for e in emojisTrue:
+            filtered = filtered.replace(e, "")
+        emojisTrue = map(emoji.emojize, emojisTrue)
+        emojis.extend(emojisTrue)
+
         words = re.findall("[a-zA-Z][a-zA-Z']*", filtered)
         for word in words:
             if word in wordDict:
@@ -86,16 +98,16 @@ async def count_command(ctx: Context, channel: discord.TextChannel):
         # count emojis
         #econverter = EmojiConverter()
         for e in emojis:
-            if len(e) < 3:
+            if len(e) < 3 and not emoji.is_emoji(e):
                 continue
-            try:
+            #try:
                 #await econverter.convert(ctx, e[1:-1])
-                if e in emojiDict:
-                    emojiDict[e] += 1
-                else:
-                    emojiDict[e] = 1
-            except EmojiNotFound as e:
-                print(e)
+            if e in emojiDict:
+                emojiDict[e] += 1
+            else:
+                emojiDict[e] = 1
+            #except EmojiNotFound as e:
+            #    print(e)
 
         # count user messages
         if message.author.id not in senders:
@@ -118,6 +130,9 @@ async def count_command(ctx: Context, channel: discord.TextChannel):
         if reactions > 0:
             mostReactedMessages.append((reactions, message))
             mostReactedMessages = sorted(mostReactedMessages, key=lambda x: x[0], reverse=True)[:3]
+
+        # count all the gifs
+        
 	
     # sort wordDict and stuff
     sendersSorted = sorted(list(senders.items()), key=lambda x: x[1], reverse=True)[:5]
