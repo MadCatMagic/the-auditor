@@ -17,3 +17,16 @@ def splitIntoArray(array: list[Any], every: int) -> list[list[Any]]:
         if t != []:
             arr.append(t)
     return arr
+
+class counter:
+    def __init__(self):
+        self._dict = {}
+
+    def count(self, obj, num = 1):
+        if obj in self._dict:
+            self._dict[obj] += num
+        else:
+            self._dict[obj] = num
+
+    def __iter__(self):
+        return iter(self._dict.items())
