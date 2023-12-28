@@ -10,6 +10,7 @@ from traceback import print_tb
 import datetime
 
 from utilities import *
+from plot import *
 
 # create bot
 intents = Intents().all()
@@ -67,11 +68,9 @@ def filterMessage(message: str, emojiCounter: counter, wordCounter: counter) -> 
         filtered = filtered.replace(e, "")
 
     # add all the unicode emojis
-    filtered = emoji.demojize(filtered)
-    emojisTrue = re.findall("[:][a-zA-Z_~+0-9]+[:]", filtered)
+    emojisTrue = list(c for c, _ in emoji.analyze(filtered))
     for e in emojisTrue:
         filtered = filtered.replace(e, "")
-    emojisTrue = map(emoji.emojize, emojisTrue)
     emojis.extend(emojisTrue)
 
     # count words
@@ -104,6 +103,8 @@ async def count_command(ctx: Context):
     gifCounter = counter()
     mostReactedMessages: list[tuple[int, discord.Message]] = []
 
+    mostActiveDays = counter()
+
     # need to scan all of the channels
     for channel in ctx.guild.text_channels:
         # look through channel
@@ -113,6 +114,9 @@ async def count_command(ctx: Context):
             if message.author == bot.user:
                 continue
             
+            # count the day
+            mostActiveDays.count(message.created_at.date())
+
             # return value currently unused
             _ = filterMessage(message.content, emojiCounter, wordCounter)
 
@@ -137,34 +141,45 @@ async def count_command(ctx: Context):
                 if embed.type == "gifv":
                     gifCounter.count(embed.url)
 	
-    # sort wordDict and stuff
+    # sort each counter to get only the top results
     sendersSorted = sorted(senders, key=lambda x: x[1], reverse=True)[:10]
-    wordCounterSorted = sorted(wordCounter, key=lambda x: x[1], reverse=True)[:20]
     emojiCounterSorted = sorted(emojiCounter, key=lambda x: x[1], reverse=True)[:5]
     reactionCounterSorted = sorted(reactionCounter, key=lambda x: x[1], reverse=True)[:3]
     gifCounterSorted = sorted(gifCounter, key=lambda x: x[1], reverse=True)[:3]
 
-    splitWordDict = [[f"{a}: {b}" for a, b in line] for line in splitIntoArray(wordCounterSorted, 4)]
-    if len(splitWordDict[-1]) < 4:
-        splitWordDict[-1].extend(["" for _ in range(4 - len(splitWordDict[-1]))])
+    wordCounterSorted = sorted(wordCounter, key=lambda x: x[1])[:20]
+    # always creates in the temp dir so don't worry about that
+    CreateHorizBarChart(wordCounterSorted, "words.png")
+    wordsImage = discord.File("temp/words.png")
+
+    CreateActivityBarChart(mostActiveDays, lastTime.date(), currentTime.date(), "activity.png")
+    activityImage = discord.File("temp/activity.png")
+    
+    #splitWordDict = [[f"{a}: {b}" for a, b in line] for line in splitIntoArray(wordCounterSorted, 4)]
+    #if len(splitWordDict[-1]) < 4:
+    #    splitWordDict[-1].extend(["" for _ in range(4 - len(splitWordDict[-1]))])
 
     # make message
     msg = f"**--- Discord Stats from {lastTime.date()} to today ---**\n"
     msg += "*Top 10 most sendiferous people on the server:*\n"
     msg += "\n".join(f"    \\- {ctx.message.guild.get_member(id).display_name}: {num}" for id, num in sendersSorted)
-    msg += "\n*Top 20 most popular words:*\n```"
-    msg += pprintMatrix(splitWordDict, spaces=2, returnAsString=True)
-    msg += "```\n*Top 5 most popular emojis:*\n"
+    msg += "\n*Top 5 most popular emojis:*\n"
     msg += "\n".join(f"    \\- {w}: {c}" for w, c in emojiCounterSorted)
     msg += "\n\n*Top 5 most popular reaction:*\n"
     msg += "\n".join(f"    \\- {w}: {c}" for w, c in reactionCounterSorted)
     msg += "\n\n*Top 3 most reacted messages:*\n"
     for i, (reactions, message) in enumerate(mostReactedMessages):
         msg += f"#{i + 1} with {reactions} reaction{'s' if reactions > 1 else ''}: {message.jump_url}\n"
-    
-    msg += "\n*Top 3 most popular gifs:*"
     await ctx.send(msg)
-    
+
+    # send words data
+    await ctx.send("**Most Popular Words this year:**\n*oh the words we will go*", file=wordsImage)
+
+    # send activity data
+    await ctx.send("**Daily activity over the past year:**\n*on that sigma grindset*", file=activityImage)
+
+    # send gifs data
+    await ctx.send("**Top 3 most popular gifs:**")
     for i, (link, num) in enumerate(gifCounterSorted):
         await ctx.send(f"#{i + 1}: {num} gif{'s' if num > 1 else ''} sent\n{link}")
 
