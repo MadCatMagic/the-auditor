@@ -88,7 +88,7 @@ def filterMessage(message: str, emojiCounter: counter, wordCounter: counter) -> 
     return filtered
 
 @bot.command(name="count")
-async def count_command(ctx: Context, channel: discord.TextChannel):
+async def count_command(ctx: Context):
     # find the time
     # need to account for leap years
     currentTime = datetime.datetime.now()
@@ -97,7 +97,6 @@ async def count_command(ctx: Context, channel: discord.TextChannel):
         yearLength += 1
     lastTime = currentTime - datetime.timedelta(days=yearLength)
 
-    messageIterator = channel.history(limit=None, after=lastTime)
     senders = counter()
     wordCounter = counter()
     emojiCounter = counter()
@@ -105,37 +104,41 @@ async def count_command(ctx: Context, channel: discord.TextChannel):
     gifCounter = counter()
     mostReactedMessages: list[tuple[int, discord.Message]] = []
 
-    async for message in messageIterator:
-        # ignore the bot
-        if message.author == bot.user:
-            continue
-        
-        # return value currently unused
-        _ = filterMessage(message.content, emojiCounter, wordCounter)
+    # need to scan all of the channels
+    for channel in ctx.guild.text_channels:
+        # look through channel
+        messageIterator = channel.history(limit=None, after=lastTime)
+        async for message in messageIterator:
+            # ignore the bot
+            if message.author == bot.user:
+                continue
+            
+            # return value currently unused
+            _ = filterMessage(message.content, emojiCounter, wordCounter)
 
-        # count user messages
-        senders.count(message.author.id)
+            # count user messages
+            senders.count(message.author.id)
 
-        # count reactions
-        for r in message.reactions:
-            em = str(r.emoji)
-            reactionCounter.count(em, r.count)
-        
-        # count most reacted messages
-        reactions = 0
-        for r in message.reactions:
-            reactions += r.count
-        if reactions > 0:
-            mostReactedMessages.append((reactions, message))
-            mostReactedMessages = sorted(mostReactedMessages, key=lambda x: x[0], reverse=True)[:3]
+            # count reactions
+            for r in message.reactions:
+                em = str(r.emoji)
+                reactionCounter.count(em, r.count)
+            
+            # count most reacted messages
+            reactions = 0
+            for r in message.reactions:
+                reactions += r.count
+            if reactions > 0:
+                mostReactedMessages.append((reactions, message))
+                mostReactedMessages = sorted(mostReactedMessages, key=lambda x: x[0], reverse=True)[:3]
 
-        # count all the gifs
-        for embed in message.embeds:
-            if embed.type == "gifv":
-                gifCounter.count(embed.url)
+            # count all the gifs
+            for embed in message.embeds:
+                if embed.type == "gifv":
+                    gifCounter.count(embed.url)
 	
     # sort wordDict and stuff
-    sendersSorted = sorted(senders, key=lambda x: x[1], reverse=True)[:5]
+    sendersSorted = sorted(senders, key=lambda x: x[1], reverse=True)[:10]
     wordCounterSorted = sorted(wordCounter, key=lambda x: x[1], reverse=True)[:20]
     emojiCounterSorted = sorted(emojiCounter, key=lambda x: x[1], reverse=True)[:5]
     reactionCounterSorted = sorted(reactionCounter, key=lambda x: x[1], reverse=True)[:3]
@@ -147,22 +150,23 @@ async def count_command(ctx: Context, channel: discord.TextChannel):
 
     # make message
     msg = f"**--- Discord Stats from {lastTime.date()} to today ---**\n"
-    msg += "*Top 5 most sendiferous people on the server:*\n"
+    msg += "*Top 10 most sendiferous people on the server:*\n"
     msg += "\n".join(f"    \\- {ctx.message.guild.get_member(id).display_name}: {num}" for id, num in sendersSorted)
     msg += "\n*Top 20 most popular words:*\n```"
     msg += pprintMatrix(splitWordDict, spaces=2, returnAsString=True)
     msg += "```\n*Top 5 most popular emojis:*\n"
     msg += "\n".join(f"    \\- {w}: {c}" for w, c in emojiCounterSorted)
-    msg += "\n*Top 5 most popular reaction:*\n"
+    msg += "\n\n*Top 5 most popular reaction:*\n"
     msg += "\n".join(f"    \\- {w}: {c}" for w, c in reactionCounterSorted)
-    msg += "\n*Top 3 most reacted messages:*"
-    #print(msg)
-    await ctx.send(msg)
+    msg += "\n\n*Top 3 most reacted messages:*\n"
     for i, (reactions, message) in enumerate(mostReactedMessages):
-        await ctx.send(f"#{i + 1} with {reactions} reaction{'s' if reactions > 1 else ''}.", reference=message, mention_author=False)
-    await ctx.send("*Top 3 most popular gifs:*")
+        msg += f"#{i + 1} with {reactions} reaction{'s' if reactions > 1 else ''}: {message.jump_url}\n"
+    
+    msg += "\n*Top 3 most popular gifs:*"
+    await ctx.send(msg)
+    
     for i, (link, num) in enumerate(gifCounterSorted):
-        await ctx.send(f"#{i + 1}: {num} sent\n{link}")
+        await ctx.send(f"#{i + 1}: {num} gif{'s' if num > 1 else ''} sent\n{link}")
 
 # load .env file
 load_dotenv()
