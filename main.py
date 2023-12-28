@@ -103,6 +103,8 @@ async def count_command(ctx: Context):
     gifCounter = counter()
     mostReactedMessages: list[tuple[int, discord.Message]] = []
 
+    mostActiveDays = counter()
+
     # need to scan all of the channels
     for channel in ctx.guild.text_channels:
         # look through channel
@@ -112,6 +114,9 @@ async def count_command(ctx: Context):
             if message.author == bot.user:
                 continue
             
+            # count the day
+            mostActiveDays.count(message.created_at.date())
+
             # return value currently unused
             _ = filterMessage(message.content, emojiCounter, wordCounter)
 
@@ -147,6 +152,9 @@ async def count_command(ctx: Context):
     CreateHorizBarChart(wordCounterSorted, "words.png")
     wordsImage = discord.File("temp/words.png")
 
+    CreateActivityBarChart(mostActiveDays, lastTime.date(), currentTime.date(), "activity.png")
+    activityImage = discord.File("temp/activity.png")
+    
     #splitWordDict = [[f"{a}: {b}" for a, b in line] for line in splitIntoArray(wordCounterSorted, 4)]
     #if len(splitWordDict[-1]) < 4:
     #    splitWordDict[-1].extend(["" for _ in range(4 - len(splitWordDict[-1]))])
@@ -166,6 +174,9 @@ async def count_command(ctx: Context):
 
     # send words data
     await ctx.send("**Most Popular Words this year:**\n*oh the words we will go*", file=wordsImage)
+
+    # send activity data
+    await ctx.send("**Daily activity over the past year:**\n*on that sigma grindset*", file=activityImage)
 
     # send gifs data
     await ctx.send("**Top 3 most popular gifs:**")

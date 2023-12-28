@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import os
+from utilities import counter
+from datetime import date
 
 def EnsureTempDir():
     folder_path = os.path.join(os.getcwd(), "temp")
@@ -10,14 +12,12 @@ def EnsureTempDir():
 def CreateHorizBarChart(data: list[tuple[str, int]], filename: str):
     # put files in here always
     EnsureTempDir()
-
+    plt.clf()
+    plt.cla()
     # Create a horizontal bar chart with minimal elements
     fig, ax = plt.subplots(figsize=(8, len(data) * 0.5))  # Adjust the figure size
 
     bars = ax.barh(*zip(*data), color='dodgerblue')  # Use a light color for bars
-
-    # Set the background color of the plot to black
-    ax.set_facecolor('black')
 
     # Display the bar lengths as numbers next to the bars
     for bar, (thing, count) in zip(bars, data):
@@ -36,22 +36,34 @@ def CreateHorizBarChart(data: list[tuple[str, int]], filename: str):
     # save plot to file
     plt.savefig("temp/" + filename, transparent=True, bbox_inches='tight')
 
-if __name__ == "__main__":
-    #words = [("apple", 2), ("pear", 5), ("orange", 10), ("sussy", 0), ("baka", 3)]
-    #CreateHorizBarChart(words, "temp.png")
-    import random
-    import calendar
+def CreateActivityBarChart(dateData: counter, minDate: date, maxDate: date, filename: str):
+    EnsureTempDir()
+    plt.clf()
+    plt.cla()
 
-    data = [(str(i), random.randint(0, 50)) for i in range(365)]
-    maxData = max(data, key=lambda x: x[1])
-    col = [(v / maxData * 0.8, 0, 1 - v / maxData) for _, v in data]
-
+    maxData = 0
+    for _, amount in dateData:
+        if amount > maxData:
+            maxData = amount
+    ordering = []
+    colours = []
+    dateDataDict = dict(dateData)
+    cd = minDate
+    i = 0
+    while cd <= maxDate:
+        if cd in dateDataDict:
+            ordering.append((i, dateDataDict[cd]))
+            colours.append((dateDataDict[cd] / maxData * 0.8, 0, 1 - dateDataDict[cd] / maxData))
+        else:
+            ordering.append((i, 0))
+            colours.append((0, 0, 0))
+        cd += date.resolution
+        i += 1
+    
     # Create a horizontal bar chart with minimal elements
-    fig, ax = plt.subplots(figsize=(8, len(data) * 0.5))
-    bars = ax.bar(*zip(*data), color=col, width=1)
+    fig, ax = plt.subplots()
+    ax.bar(*zip(*ordering), color=colours)
 
-    # Set the background color of the plot to black
-    ax.set_facecolor('black')
 
     # Display the bar lengths as numbers next to the bars
     #for bar, (thing, count) in zip(bars, data):
@@ -61,10 +73,13 @@ if __name__ == "__main__":
     # Hide unnecessary elements
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
     ax.spines['left'].set_visible(False)
-    ax.tick_params(axis='both', which='both', length=0)
+    ax.spines['bottom'].set_color("white")
+    ax.tick_params(axis='both', which='both', length=0, colors="white")
     ax.set_yticklabels([])  # Hide y-axis labels
-    ax.set_xticklabels([])  # Hide x-axis labels
 
-    plt.show()
+    plt.savefig("temp/" + filename, transparent=True, bbox_inches='tight')
+
+if __name__ == "__main__":
+    words = [("apple", 2), ("pear", 5), ("orange", 10), ("sussy", 0), ("baka", 3)]
+    CreateHorizBarChart(words, "temp.png")
