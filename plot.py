@@ -60,7 +60,6 @@ def CreateActivityBarChart(dateData: counter, minDate: date, maxDate: date, file
         cd += date.resolution
         i += 1
     
-    # Create a horizontal bar chart with minimal elements
     fig, ax = plt.subplots()
     ax.bar(*zip(*ordering), color=colours)
 

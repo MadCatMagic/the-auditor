@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 # from discord import Member, Embed, File
 import discord
 from discord import Intents, Activity, ActivityType
-from discord.ext.commands import Context, Bot, MissingPermissions, MissingRequiredArgument, CommandNotFound, EmojiConverter, EmojiNotFound
+from discord.ext.commands import Context, Bot, MissingPermissions, MissingRequiredArgument, CommandNotFound, has_permissions
 from os import getenv
 from traceback import print_tb
 import datetime
@@ -14,18 +14,17 @@ from plot import *
 
 # create bot
 intents = Intents().all()
-bot = Bot(command_prefix='?', intents=intents)
+bot = Bot(command_prefix='?', intents=intents, help_command=None)
 
 # bot connection ready function
 @bot.event
 async def on_ready():
-	
     print(f"{bot.user.name} has connected to discord")
     await bot.change_presence(activity=Activity(type=ActivityType.watching, name="and waiting"))
 
-@bot.event
-async def on_message(message: discord.Message):
-    await bot.process_commands(message)
+#@bot.event
+#async def on_message(message: discord.Message):
+#    await bot.process_commands(message)
 
 # error handling
 @bot.event
@@ -46,9 +45,13 @@ async def on_command_error(ctx, error):
         print(error)
         print_tb(error.__traceback__)
 
-@bot.event
-async def on_member_join(member: discord.Member):
-	pass
+#@bot.event
+#async def on_member_join(member: discord.Member):
+#	pass
+        
+@bot.command(name="help")
+async def help_command(ctx: Context):
+    await ctx.send("*work in progress... do not touch!*")
 
 import re
 import emoji
@@ -87,6 +90,7 @@ def filterMessage(message: str, emojiCounter: counter, wordCounter: counter) -> 
     return filtered
 
 @bot.command(name="count")
+@has_permissions(administrator=True)
 async def count_command(ctx: Context):
     # find the time
     # need to account for leap years
