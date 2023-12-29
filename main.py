@@ -170,6 +170,7 @@ async def count_command(ctx: Context):
     wordsImage = discord.File("temp/words.png")
     CreateHorizBarChart(sendersSorted, "senders.png")
     sendersImage = discord.File("temp/senders.png")
+    
     CreateActivityBarChart(mostActiveDays, lastTime.date(), currentTime.date(), "activity.png")
     activityImage = discord.File("temp/activity.png")
     
