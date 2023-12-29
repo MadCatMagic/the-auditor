@@ -16,13 +16,13 @@ def CreateHorizBarChart(data: list[tuple[str, int]], filename: str, fontsize: in
     plt.cla()
     # Create a horizontal bar chart with minimal elements
     fig, ax = plt.subplots(figsize=(8, len(data) * 0.5))  # Adjust the figure size
-
+    maxWidth = max(data, key=lambda x: x[1])[1]
     bars = ax.barh(*zip(*data), color='dodgerblue')  # Use a light color for bars
 
     # Display the bar lengths as numbers next to the bars
     for bar, (thing, count) in zip(bars, data):
         yval = bar.get_y() + bar.get_height() / 2
-        ax.text(bar.get_width() + 1, yval, f'{thing}: {count}', color='white', va='center', fontsize=fontsize)
+        ax.text(bar.get_width() + maxWidth * 0.012, yval, f'{thing}: {count}', color='white', va='center', fontsize=fontsize)
 
     # Hide unnecessary elements
     ax.spines['top'].set_visible(False)

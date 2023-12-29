@@ -99,7 +99,7 @@ def filterMessage(message: str, emojiCounter: counter, wordCounter: counter) -> 
             continue
         emojiCounter.count(e)
     
-    return filtered, len(words), len(emojis), positivityScore
+    return filtered.strip(), len(words), len(emojis), positivityScore
 
 def GetNameFromID(id: int, ctx: Context | None = None) -> str:
     if ctx != None:
@@ -107,6 +107,9 @@ def GetNameFromID(id: int, ctx: Context | None = None) -> str:
         if memb != None:
             return memb.display_name
     user = bot.get_user(id)
+    # special exception since he apparently keeps turning up
+    if id == 627852809693429780:
+        return "brug (deceased)"
     if user == None:
         return "[unknown user]"
     return user.display_name
@@ -115,7 +118,7 @@ def GetNameFromID(id: int, ctx: Context | None = None) -> str:
 @has_permissions(administrator=True)
 async def count_command(ctx: Context):
     # let them know it is working
-    ctx.send("`processing...`")
+    await ctx.send("`processing...`")
 
     # find the time
     # need to account for leap years
@@ -126,6 +129,7 @@ async def count_command(ctx: Context):
     lastTime = currentTime - datetime.timedelta(days=yearLength)
 
     senders = counter()
+    sendersNotAttachments = counter()
     sendersTotalLength = counter()
     wordCounter = counter()
     emojiCounter = counter()
@@ -142,6 +146,7 @@ async def count_command(ctx: Context):
     gifsSent = 0
     emojisUsed = 0
     reactionsApplied = 0
+    translation: dict[int, str] = {}
 
     # need to scan all of the channels
     for channel in ctx.guild.text_channels:
@@ -151,25 +156,30 @@ async def count_command(ctx: Context):
             # ignore the bot
             if message.author == bot.user:
                 continue
+
+            if message.author == None:
+                print("NONE")
+            elif message.author.id not in translation:
+                translation[message.author.id] = message.author.display_name
             
             messagesSent += 1
 
             # count the day
             mostActiveDays.count(message.created_at.date())
 
-            # raw filtered text currently unused
-            _, wordsTypedInMessage, emojisUsedInMessage, positivityScore = filterMessage(message.content, emojiCounter, wordCounter)
+            if message.author.bot:
+                continue
+
+            filteredMessage, wordsTypedInMessage, emojisUsedInMessage, positivityScore = filterMessage(message.content, emojiCounter, wordCounter)
             wordsTyped += wordsTypedInMessage
             emojisUsed += emojisUsedInMessage
             positivityCounter.count(message.author.id, positivityScore)
 
             # count user messages
             senders.count(message.author.id)
-            if message.content != "":
-                sendersTotalLength.count(message.author.id, len(message.content))
-            else:
-                # message with attachent or gif counts as 5 characters
-                sendersTotalLength.count(message.author.id, 5)
+            if filteredMessage != "":
+                sendersNotAttachments.count(message.author.id)
+                sendersTotalLength.count(message.author.id, len(filteredMessage))
 
             # for most common message and sender award
             if message.content != "":
@@ -206,7 +216,7 @@ async def count_command(ctx: Context):
 
     # images data
     sendersSorted = sorted(senders, key=lambda x: x[1])[-10:]
-    sendersSorted = [(GetNameFromID(id, ctx), n) for id, n in sendersSorted]
+    sendersSorted = [(translation[id], n) for id, n in sendersSorted]
     wordCounterSorted = sorted(wordCounter, key=lambda x: x[1])[-40:]
 
     # create images
@@ -243,23 +253,35 @@ async def count_command(ctx: Context):
     positivityRanking = sorted(positivityCounter, key=lambda x: x[1])
     mostNegativePerson, mostPositivePerson = positivityRanking[0], positivityRanking[-1]
     msg += "\n### The devil and angel/nicest and naughtiest Awards"
-    msg += f"\nAnd the award for most negativity goes to... *{GetNameFromID(mostNegativePerson[0], ctx)}*, with a score of *{mostNegativePerson[1]}*! We hate you :)"
-    msg += f"\nAnd the award for most positivity goes to... *{GetNameFromID(mostPositivePerson[0], ctx)}*, with a score of *{mostPositivePerson[1]}*! We hate you too, sicko."
+    msg += f"\nAnd the award for most negativity goes to... *{translation[mostNegativePerson[0]]}*, with a score of *{mostNegativePerson[1]}*! We hate you :)"
+    msg += f"\nAnd the award for most positivity goes to... *{translation[mostPositivePerson[0]]}*, with a score of *{mostPositivePerson[1]}*! We hate you too, sicko."
+    if len(positivityRanking) > 1:
+        secondMostNegativePerson, secondMostPositivePerson = positivityRanking[1], positivityRanking[-2]
+        msg += f"\nIn the runner up positions: *{translation[secondMostNegativePerson[0]]}* with *{secondMostNegativePerson[1]}* for negativity and *{translation[secondMostPositivePerson[0]]}* with *{secondMostPositivePerson[1]}* for positivity. A round of unamusement to them all!"
+
+    averageMessageLengths = sorted([(id, totMessageLength / numMessages) for (id, numMessages), (_, totMessageLength) in zip(sendersNotAttachments, sendersTotalLength) if numMessages >= 10], key=lambda x: x[1])
     
-    averageMessageLengths = sorted([(id, totMessageLength / numMessages) for (id, numMessages), (_, totMessageLength) in zip(senders, sendersTotalLength)], key=lambda x: x[1])
-    longestAverageMessage = (GetNameFromID(averageMessageLengths[-1][0], ctx), averageMessageLengths[-1][1])
+    longestAverageMessage = (translation[averageMessageLengths[-1][0]], averageMessageLengths[-1][1])
     msg += "\n### \"i ain't reading that essay\" Award"
     msg += f"\nAnd the award for the longest average message, an award created by Goose for the benefit of illiterates everywhere, goes to... *{longestAverageMessage[0]}*, with an average message length of *{round(longestAverageMessage[1])}*! shut the fuck up."
-    
+    if len(averageMessageLengths) > 1:
+        secondLongestAverageMessage = (translation[averageMessageLengths[-2][0]], averageMessageLengths[-2][1])
+        msg += f"\nAnd in the runner up position we have *{secondLongestAverageMessage[0]}* with an average of *{round(secondLongestAverageMessage[1])}* characters per message. Wow. Just, wow."
+
     allMessagesSorted = sorted(allMessageCounters.items(), key=lambda x: x[1].sum())
     mostCommonMessage = (allMessagesSorted[-1][0], allMessagesSorted[-1][1].sum())
     mostCommonMessageSenders = sorted(allMessagesSorted[-1][1], key=lambda x: x[1])
-    mostCommonMessageSender = (GetNameFromID(mostCommonMessageSenders[-1][0]), mostCommonMessageSenders[-1][1])
+    mostCommonMessageSender = (translation[mostCommonMessageSenders[-1][0]], mostCommonMessageSenders[-1][1])
     msg += "\n### Most Common Message Award"
     msg += "\nOddly enough, this award does not go to a real person... not that there are any real people on this server."
     msg += f"\nNevertheless, this award goes to... '*{mostCommonMessage[0]}*', sent *{mostCommonMessage[1]}* times!"
     msg += f"\nAs a special mention, this message was sent most often by *{mostCommonMessageSender[0]}*, a whole *{mostCommonMessageSender[1]}* times!"
-    
+    if len(allMessagesSorted) > 1:
+        mostCommonMessageRunnerUp = (allMessagesSorted[-2][0], allMessagesSorted[-2][1].sum())
+        secondMostCommonMessageSenders = sorted(allMessagesSorted[-2][1], key=lambda x: x[1])
+        secondMostCommonMessageSender = (translation[secondMostCommonMessageSenders[-1][0]], secondMostCommonMessageSenders[-1][1])
+        msg += f"\nIn second place was the message, '*{mostCommonMessageRunnerUp[0]}*', sent a measly *{mostCommonMessageRunnerUp[1]}* times, "
+        msg += f"mostly by *{secondMostCommonMessageSender[0]}*, *{secondMostCommonMessageSender[1]}* times."
     await ctx.send(msg)
 
     # misc stuff
