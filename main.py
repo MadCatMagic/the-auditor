@@ -146,16 +146,21 @@ async def count_command(ctx: Context):
                     gifCounter.count(embed.url)
 	
     # sort each counter to get only the top results
-    sendersSorted = sorted(senders, key=lambda x: x[1], reverse=True)[:10]
     emojiCounterSorted = sorted(emojiCounter, key=lambda x: x[1], reverse=True)[:5]
     reactionCounterSorted = sorted(reactionCounter, key=lambda x: x[1], reverse=True)[:3]
     gifCounterSorted = sorted(gifCounter, key=lambda x: x[1], reverse=True)[:3]
 
+    # images data
+    sendersSorted = sorted(senders, key=lambda x: x[1])[:10]
+    sendersSorted = [(ctx.message.guild.get_member(id).display_name, n) for id, n in sendersSorted]
     wordCounterSorted = sorted(wordCounter, key=lambda x: x[1])[:20]
+
+    # create images
     # always creates in the temp dir so don't worry about that
     CreateHorizBarChart(wordCounterSorted, "words.png")
     wordsImage = discord.File("temp/words.png")
-
+    CreateHorizBarChart(sendersSorted, "senders.png")
+    sendersImage = discord.File("temp/senders.png")
     CreateActivityBarChart(mostActiveDays, lastTime.date(), currentTime.date(), "activity.png")
     activityImage = discord.File("temp/activity.png")
     
@@ -164,28 +169,34 @@ async def count_command(ctx: Context):
     #    splitWordDict[-1].extend(["" for _ in range(4 - len(splitWordDict[-1]))])
 
     # make message
-    msg = f"**--- Discord Stats from {lastTime.date()} to today ---**\n"
-    msg += "*Top 10 most sendiferous people on the server:*\n"
-    msg += "\n".join(f"    \\- {ctx.message.guild.get_member(id).display_name}: {num}" for id, num in sendersSorted)
-    msg += "\n*Top 5 most popular emojis:*\n"
-    msg += "\n".join(f"    \\- {w}: {c}" for w, c in emojiCounterSorted)
-    msg += "\n\n*Top 5 most popular reaction:*\n"
-    msg += "\n".join(f"    \\- {w}: {c}" for w, c in reactionCounterSorted)
-    msg += "\n\n*Top 3 most reacted messages:*\n"
-    for i, (reactions, message) in enumerate(mostReactedMessages):
-        msg += f"#{i + 1} with {reactions} reaction{'s' if reactions > 1 else ''}: {message.jump_url}\n"
-    await ctx.send(msg)
-
-    # send words data
-    await ctx.send("**Most Popular Words this year:**\n*oh the words we will go*", file=wordsImage)
+    msg = f"# --- Discord Stats from {lastTime.date()} to today ---\n*bingus my beloved*\n"
+    msg += "\n### Top 10 most sendiferous people on the server:\n*what weirdos...*\n"
+    #msg += "\n".join(f"    \\- {ctx.message.guild.get_member(id).display_name}: {num}" for id, num in sendersSorted)
+    await ctx.send(msg, file=sendersImage)
+    
+    # integrate words data with first message
+    msg = "\n### Most Popular Words this year:\n*all the words we will go*"
+    await ctx.send(msg, file=wordsImage)
+    #await ctx.send("**Most Popular Words this year:**\n*oh the words we will go*", file=wordsImage)
 
     # send activity data
-    await ctx.send("**Daily activity over the past year:**\n*on that sigma grindset*", file=activityImage)
+    await ctx.send("### Daily activity over the past year:\n*on that sigma grindset*", file=activityImage)
+
+    msg = "## Finally, some more little things...\n*please, sir, can i have some more? ;-;*\n"
+    msg += "\n### Top 5 most popular emojis:\n*oh, dearest penisbee; wherefore art thou?*\n"
+    msg += "\n".join(f"    \\- {w}: {c}" for w, c in emojiCounterSorted)
+    msg += "\n\n### Top 5 most popular reaction:\n*when the imposter is- UkGgh- eughh...*\n"
+    msg += "\n".join(f"    \\- {w}: {c}" for w, c in reactionCounterSorted)
+    msg += "\n\n### Top 3 most reacted messages:\n*mr popular are we?*\n"
+    for i, (reactions, message) in enumerate(mostReactedMessages):
+        msg += f"#{i + 1} with {reactions} reaction{'s' if reactions > 1 else ''}: {message.jump_url}\n"
+    
+    msg += "\n### Top 3 most popular gifs:\n*omw to that bingussy*"
+    await ctx.send(msg)
 
     # send gifs data
-    await ctx.send("**Top 3 most popular gifs:**")
     for i, (link, num) in enumerate(gifCounterSorted):
-        await ctx.send(f"#{i + 1}: {num} gif{'s' if num > 1 else ''} sent\n{link}")
+        await ctx.send(f"#{i + 1}: with {num} gif{'s' if num > 1 else ''} sent\n{link}")
 
 # load .env file
 load_dotenv()
