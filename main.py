@@ -79,7 +79,8 @@ def filterMessage(message: str, emojiCounter: counter, wordCounter: counter) -> 
     # count words
     words = re.findall("[a-zA-Z][a-zA-Z']*", filtered)
     for word in words:
-        wordCounter.count(word)
+        # count words equal regardless of case
+        wordCounter.count(word.lower())
 
     # count emojis
     for e in emojis:
@@ -162,7 +163,7 @@ async def count_command(ctx: Context):
                 sendersSorted[i] = ("[unknown user]", n)
             else:
                 sendersSorted[i] = (user.display_name, n)
-    wordCounterSorted = sorted(wordCounter, key=lambda x: x[1])[-25:]
+    wordCounterSorted = sorted(wordCounter, key=lambda x: x[1])[-40:]
 
     # create images
     # always creates in the temp dir so don't worry about that
