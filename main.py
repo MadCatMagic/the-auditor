@@ -138,7 +138,7 @@ async def count_command(ctx: Context):
                 reactions += r.count
             if reactions > 0:
                 mostReactedMessages.append((reactions, message))
-                mostReactedMessages = sorted(mostReactedMessages, key=lambda x: x[0], reverse=True)[:3]
+                mostReactedMessages = sorted(mostReactedMessages, key=lambda x: x[0], reverse=True)[:5]
 
             # count all the gifs
             for embed in message.embeds:
@@ -146,14 +146,14 @@ async def count_command(ctx: Context):
                     gifCounter.count(embed.url)
 	
     # sort each counter to get only the top results
-    emojiCounterSorted = sorted(emojiCounter, key=lambda x: x[1], reverse=True)[:5]
-    reactionCounterSorted = sorted(reactionCounter, key=lambda x: x[1], reverse=True)[:3]
-    gifCounterSorted = sorted(gifCounter, key=lambda x: x[1], reverse=True)[:3]
+    emojiCounterSorted = sorted(emojiCounter, key=lambda x: x[1], reverse=True)[:8]
+    reactionCounterSorted = sorted(reactionCounter, key=lambda x: x[1], reverse=True)[:8]
+    gifCounterSorted = sorted(gifCounter, key=lambda x: x[1], reverse=True)[:5]
 
     # images data
-    sendersSorted = sorted(senders, key=lambda x: x[1])[:10]
+    sendersSorted = sorted(senders, key=lambda x: x[1])[-10:]
     sendersSorted = [(ctx.message.guild.get_member(id).display_name, n) for id, n in sendersSorted]
-    wordCounterSorted = sorted(wordCounter, key=lambda x: x[1])[:20]
+    wordCounterSorted = sorted(wordCounter, key=lambda x: x[1])[-20:]
 
     # create images
     # always creates in the temp dir so don't worry about that
@@ -182,16 +182,16 @@ async def count_command(ctx: Context):
     # send activity data
     await ctx.send("### Daily activity over the past year:\n*on that sigma grindset*", file=activityImage)
 
-    msg = "## Finally, some more little things...\n*please, sir, can i have some more? ;-;*\n"
-    msg += "\n### Top 5 most popular emojis:\n*oh, dearest penisbee; wherefore art thou?*\n"
+    msg = "## And, some more little things...\n*please, sir, can i have some more? ;-;*\n"
+    msg += "\n### Top 8 most popular emojis:\n*oh, dearest penisbee; wherefore art thou?*\n"
     msg += "\n".join(f"    \\- {w}: {c}" for w, c in emojiCounterSorted)
-    msg += "\n\n### Top 5 most popular reaction:\n*when the imposter is- UkGgh- eughh...*\n"
+    msg += "\n\n### Top 8 most popular reaction:\n*when the imposter is- UkGgh- eughh...*\n"
     msg += "\n".join(f"    \\- {w}: {c}" for w, c in reactionCounterSorted)
-    msg += "\n\n### Top 3 most reacted messages:\n*mr popular are we?*\n"
+    msg += "\n\n### Top 5 most reacted messages:\n*mr popular are we?*\n"
     for i, (reactions, message) in enumerate(mostReactedMessages):
         msg += f"#{i + 1} with {reactions} reaction{'s' if reactions > 1 else ''}: {message.jump_url}\n"
     
-    msg += "\n### Top 3 most popular gifs:\n*omw to that bingussy*"
+    msg += "\n### Top 5 most popular gifs:\n*omw to that bingussy*"
     await ctx.send(msg)
 
     # send gifs data
