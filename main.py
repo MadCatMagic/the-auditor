@@ -123,6 +123,7 @@ async def count_command(ctx: Context):
     lastTime = currentTime - datetime.timedelta(days=yearLength)
 
     senders = counter()
+    sendersTotalLength = counter()
     wordCounter = counter()
     emojiCounter = counter()
     reactionCounter = counter()
@@ -160,6 +161,11 @@ async def count_command(ctx: Context):
 
             # count user messages
             senders.count(message.author.id)
+            if message.content != "":
+                sendersTotalLength.count(message.author.id, len(message.content))
+            else:
+                # message with attachent or gif counts as 5 characters
+                sendersTotalLength.count(message.author.id, 5)
 
             # count reactions
             for r in message.reactions:
@@ -220,14 +226,16 @@ async def count_command(ctx: Context):
     await ctx.send("### Daily activity over the past year:\n*on that sigma grindset*", file=activityImage)
 
     # awards
-    positivityRanking = sorted(positivityCounter, key=lambda x: x[1])
-    mostNegativePerson, mostPositivePerson = positivityRanking[0], positivityRanking[-1]
     msg = "## Time for the annual awards ceremony...\n*the most prestigious in the land*\n"
 
+    positivityRanking = sorted(positivityCounter, key=lambda x: x[1])
+    mostNegativePerson, mostPositivePerson = positivityRanking[0], positivityRanking[-1]
     msg += "\n### The devil and angel/nicest and naughtiest Awards"
     msg += f"\nAnd the award for most negativity goes to... *{GetNameFromID(mostNegativePerson[0], ctx)}*, with a score of *{mostNegativePerson[1]}*! We hate you :)"
     msg += f"\nAnd the award for most positivity goes to... *{GetNameFromID(mostPositivePerson[0], ctx)}*, with a score of *{mostPositivePerson[1]}*! We hate you too, sicko."
     
+    averageMessageLengths = sorted([(id, totMessageLength / numMessages) for (id, numMessages), (_, totMessageLength) in zip(senders, sendersTotalLength)], key=lambda x: x[1])
+    longestAverageMessage = GetNameFromID(averageMessageLengths[-1][0], ctx)
     msg += "\n### \"i ain't reading that essay\" Award"
     msg += f"\nAnd the award for the longest average message, \
              an award created by Goose for the benefit of illiterates everywhere, goes to... {longestAverageMessage}! excellent job!"
