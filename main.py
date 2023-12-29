@@ -53,10 +53,16 @@ async def on_command_error(ctx, error):
 async def help_command(ctx: Context):
     await ctx.send("*work in progress... do not touch!*")
 
+# get positive/negative word lists
+with open("positive-words.txt", "r") as f:
+    positiveWords = {word for word in f.readlines()}
+with open("negative-words.txt", "r") as f:
+    negativeWords = {word for word in f.readlines()}
+
 import re
 import emoji
 linkRegex = re.compile("(?i)\\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\\s()<>{}\\[\\]]+|\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\))+(?:\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\)|[^\\s`!()\\[\\]{};:'\".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\\b/?(?!@)))")
-def filterMessage(message: str, emojiCounter: counter, wordCounter: counter) -> str:
+def filterMessage(message: str, emojiCounter: counter, wordCounter: counter) -> tuple[str, int, int, int]:
     global linkRegex
 
     # filter out links
@@ -76,11 +82,16 @@ def filterMessage(message: str, emojiCounter: counter, wordCounter: counter) -> 
         filtered = filtered.replace(e, "")
     emojis.extend(emojisTrue)
 
-    # count words
+    # count words and positivity
+    positivityScore = 0
     words = re.findall("[a-zA-Z][a-zA-Z']*", filtered)
     for word in words:
         # count words equal regardless of case
         wordCounter.count(word.lower())
+        if word in positiveWords:
+            positivityScore += 1
+        if word in negativeWords:
+            positivityScore -= 1
 
     # count emojis
     for e in emojis:
@@ -88,7 +99,17 @@ def filterMessage(message: str, emojiCounter: counter, wordCounter: counter) -> 
             continue
         emojiCounter.count(e)
     
-    return filtered, len(words), len(emojis)
+    return filtered, len(words), len(emojis), positivityScore
+
+def GetNameFromID(id: int, ctx: Context | None = None) -> str:
+    if ctx != None:
+        memb = ctx.message.guild.get_member(id)
+        if memb != None:
+            return memb.display_name
+    user = bot.get_user(id)
+    if user == None:
+        return "[unknown user]"
+    return user.display_name
 
 @bot.command(name="count")
 @has_permissions(administrator=True)
@@ -108,6 +129,8 @@ async def count_command(ctx: Context):
     gifCounter = counter()
     mostReactedMessages: list[tuple[int, discord.Message]] = []
     mostActiveDays = counter()
+
+    positivityCounter = counter()
 
     messagesSent = 0
     wordsTyped = 0
@@ -129,10 +152,11 @@ async def count_command(ctx: Context):
             # count the day
             mostActiveDays.count(message.created_at.date())
 
-            # return value currently unused
-            _, wordsTypedInMessage, emojisUsedInMessage = filterMessage(message.content, emojiCounter, wordCounter)
+            # raw filtered text currently unused
+            _, wordsTypedInMessage, emojisUsedInMessage, positivityScore = filterMessage(message.content, emojiCounter, wordCounter)
             wordsTyped += wordsTypedInMessage
             emojisUsed += emojisUsedInMessage
+            positivityCounter.count(message.author.id, positivityScore)
 
             # count user messages
             senders.count(message.author.id)
@@ -164,16 +188,7 @@ async def count_command(ctx: Context):
 
     # images data
     sendersSorted = sorted(senders, key=lambda x: x[1])[-10:]
-    for i, (id, n) in enumerate(sendersSorted):
-        memb = ctx.message.guild.get_member(id)
-        if memb != None:
-            sendersSorted[i] = (memb.display_name, n)
-        else:
-            user = bot.get_user(id)
-            if user == None:
-                sendersSorted[i] = ("[unknown user]", n)
-            else:
-                sendersSorted[i] = (user.display_name, n)
+    sendersSorted = [(GetNameFromID(id, ctx), n) for id, n in sendersSorted]
     wordCounterSorted = sorted(wordCounter, key=lambda x: x[1])[-40:]
 
     # create images
@@ -205,11 +220,13 @@ async def count_command(ctx: Context):
     await ctx.send("### Daily activity over the past year:\n*on that sigma grindset*", file=activityImage)
 
     # awards
+    positivityRanking = sorted(positivityCounter, key=lambda x: x[1])
+    mostNegativePerson, mostPositivePerson = positivityRanking[0], positivityRanking[-1]
     msg = "## Time for the annual awards ceremony...\n*the most prestigious in the land*\n"
 
     msg += "\n### The devil and angel/nicest and naughtiest Awards"
-    msg += f"\nAnd the award for most negativity goes to... {mostNegativePerson}! We hate you :)"
-    msg += f"\nAnd the award for most positivity goes to... {mostPositivePerson}! We hate you too, sicko."
+    msg += f"\nAnd the award for most negativity goes to... *{GetNameFromID(mostNegativePerson[0], ctx)}*, with a score of *{mostNegativePerson[1]}*! We hate you :)"
+    msg += f"\nAnd the award for most positivity goes to... *{GetNameFromID(mostPositivePerson[0], ctx)}*, with a score of *{mostPositivePerson[1]}*! We hate you too, sicko."
     
     msg += "\n### \"i ain't reading that essay\" Award"
     msg += f"\nAnd the award for the longest average message, \
@@ -217,7 +234,7 @@ async def count_command(ctx: Context):
     
     msg += "\n### Most Common Message Award"
     msg += "\nOddly enough, this award does not go to a real person... not that there are any real people on this server."
-    msg += f"\nNevertheless, this award goes to... {mostCommonMessage[0]}, sent {mostCommonMessage[1]} times!"
+    msg += f"\nNevertheless, this award goes to... '{mostCommonMessage[0]}', sent {mostCommonMessage[1]} times!"
     msg += f"\nAs a special mention, this message was sent most often by {mostCommonMessageSender[0]}, a whole {mostCommonMessageSender[1]} times!"
     
     await ctx.send(msg)
