@@ -22,7 +22,7 @@ def CreateHorizBarChart(data: list[tuple[str, int]], filename: str):
     # Display the bar lengths as numbers next to the bars
     for bar, (thing, count) in zip(bars, data):
         yval = bar.get_y() + bar.get_height() / 2
-        ax.text(bar.get_width() + 0.1, yval, f'{thing}: {count}', color='white', va='center')
+        ax.text(bar.get_width() + 0.2, yval, f'{thing}: {count}', color='white', va='center')
 
     # Hide unnecessary elements
     ax.spines['top'].set_visible(False)
@@ -60,8 +60,7 @@ def CreateActivityBarChart(dateData: counter, minDate: date, maxDate: date, file
         cd += date.resolution
         i += 1
     
-    # Create a horizontal bar chart with minimal elements
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10, 6))
     ax.bar(*zip(*ordering), color=colours)
 
 
