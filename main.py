@@ -132,6 +132,7 @@ async def count_command(ctx: Context):
     mostActiveDays = counter()
 
     positivityCounter = counter()
+    allMessageCounters: dict[str, counter] = {}
 
     messagesSent = 0
     wordsTyped = 0
@@ -166,6 +167,14 @@ async def count_command(ctx: Context):
             else:
                 # message with attachent or gif counts as 5 characters
                 sendersTotalLength.count(message.author.id, 5)
+
+            # for most common message and sender award
+            if message.content != "":
+                if message.content in allMessageCounters:
+                    allMessageCounters[message.content].count(message.author.id)
+                else:
+                    allMessageCounters[message.content] = counter()
+                    allMessageCounters[message.content].count(message.author.id)
 
             # count reactions
             for r in message.reactions:
@@ -238,12 +247,16 @@ async def count_command(ctx: Context):
     longestAverageMessage = GetNameFromID(averageMessageLengths[-1][0], ctx)
     msg += "\n### \"i ain't reading that essay\" Award"
     msg += f"\nAnd the award for the longest average message, \
-             an award created by Goose for the benefit of illiterates everywhere, goes to... {longestAverageMessage}! excellent job!"
+             an award created by Goose for the benefit of illiterates everywhere, goes to... *{longestAverageMessage}*! excellent job!"
     
+    allMessagesSorted = sorted(allMessageCounters, lambda x: x[1].sum())
+    mostCommonMessage = (allMessagesSorted[-1][0], allMessagesSorted[-1][1].sum())
+    mostCommonMessageSenders = sorted(allMessagesSorted[-1][1], key=lambda x: x[1])
+    mostCommonMessageSender = (GetNameFromID(mostCommonMessageSenders[-1][0]), mostCommonMessageSenders[-1][1])
     msg += "\n### Most Common Message Award"
     msg += "\nOddly enough, this award does not go to a real person... not that there are any real people on this server."
-    msg += f"\nNevertheless, this award goes to... '{mostCommonMessage[0]}', sent {mostCommonMessage[1]} times!"
-    msg += f"\nAs a special mention, this message was sent most often by {mostCommonMessageSender[0]}, a whole {mostCommonMessageSender[1]} times!"
+    msg += f"\nNevertheless, this award goes to... '*{mostCommonMessage[0]}*', sent *{mostCommonMessage[1]}* times!"
+    msg += f"\nAs a special mention, this message was sent most often by *{mostCommonMessageSender[0]}*, a whole *{mostCommonMessageSender[1]}* times!"
     
     await ctx.send(msg)
 
