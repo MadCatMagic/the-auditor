@@ -152,8 +152,17 @@ async def count_command(ctx: Context):
 
     # images data
     sendersSorted = sorted(senders, key=lambda x: x[1])[-10:]
-    sendersSorted = [(ctx.message.guild.get_member(id).display_name, n) for id, n in sendersSorted]
-    wordCounterSorted = sorted(wordCounter, key=lambda x: x[1])[-20:]
+    for i, (id, n) in enumerate(sendersSorted):
+        memb = ctx.message.guild.get_member(id)
+        if memb != None:
+            sendersSorted[i] = (memb.display_name, n)
+        else:
+            user = bot.get_user(id)
+            if user == None:
+                sendersSorted[i] = ("[unknown user]", n)
+            else:
+                sendersSorted[i] = (user.display_name, n)
+    wordCounterSorted = sorted(wordCounter, key=lambda x: x[1])[-25:]
 
     # create images
     # always creates in the temp dir so don't worry about that
