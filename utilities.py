@@ -30,3 +30,9 @@ class counter:
 
     def __iter__(self):
         return iter(self._dict.items())
+    
+    def __len__(self):
+        return len(self._dict)
+    
+    def sum(self) -> int:
+        return sum(self._dict.values())
