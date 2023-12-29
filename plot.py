@@ -9,7 +9,7 @@ def EnsureTempDir():
         os.makedirs(folder_path)
         print(f"'/temp' directory created.")
 
-def CreateHorizBarChart(data: list[tuple[str, int]], filename: str):
+def CreateHorizBarChart(data: list[tuple[str, int]], filename: str, fontsize: int = 10):
     # put files in here always
     EnsureTempDir()
     plt.clf()
@@ -22,7 +22,7 @@ def CreateHorizBarChart(data: list[tuple[str, int]], filename: str):
     # Display the bar lengths as numbers next to the bars
     for bar, (thing, count) in zip(bars, data):
         yval = bar.get_y() + bar.get_height() / 2
-        ax.text(bar.get_width() + 0.2, yval, f'{thing}: {count}', color='white', va='center')
+        ax.text(bar.get_width() + 1, yval, f'{thing}: {count}', color='white', va='center', fontsize=fontsize)
 
     # Hide unnecessary elements
     ax.spines['top'].set_visible(False)

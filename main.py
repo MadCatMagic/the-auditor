@@ -55,9 +55,9 @@ async def help_command(ctx: Context):
 
 # get positive/negative word lists
 with open("positive-words.txt", "r") as f:
-    positiveWords = {word for word in f.readlines()}
+    positiveWords = {word.strip() for word in f.read().splitlines()}
 with open("negative-words.txt", "r") as f:
-    negativeWords = {word for word in f.readlines()}
+    negativeWords = {word.strip() for word in f.read().splitlines()}
 
 import re
 import emoji
@@ -88,9 +88,9 @@ def filterMessage(message: str, emojiCounter: counter, wordCounter: counter) -> 
     for word in words:
         # count words equal regardless of case
         wordCounter.count(word.lower())
-        if word in positiveWords:
+        if word.lower() in positiveWords:
             positivityScore += 1
-        if word in negativeWords:
+        if word.lower() in negativeWords:
             positivityScore -= 1
 
     # count emojis
@@ -208,7 +208,7 @@ async def count_command(ctx: Context):
 
     # create images
     # always creates in the temp dir so don't worry about that
-    CreateHorizBarChart(wordCounterSorted, "words.png")
+    CreateHorizBarChart(wordCounterSorted, "words.png", 16)
     wordsImage = discord.File("temp/words.png")
     CreateHorizBarChart(sendersSorted, "senders.png")
     sendersImage = discord.File("temp/senders.png")
