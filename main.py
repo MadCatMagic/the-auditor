@@ -51,7 +51,7 @@ async def on_command_error(ctx, error):
         
 @bot.command(name="help")
 async def help_command(ctx: Context):
-    await ctx.send("*work in progress... do not touch!*")
+    await ctx.send("The only thing I do is `?count`... but you need to be an admin to ask me to!")
 
 # get positive/negative word lists
 with open("positive-words.txt", "r") as f:
@@ -114,6 +114,9 @@ def GetNameFromID(id: int, ctx: Context | None = None) -> str:
 @bot.command(name="count")
 @has_permissions(administrator=True)
 async def count_command(ctx: Context):
+    # let them know it is working
+    ctx.send("`processing...`")
+
     # find the time
     # need to account for leap years
     currentTime = datetime.datetime.now()
