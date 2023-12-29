@@ -88,7 +88,7 @@ def filterMessage(message: str, emojiCounter: counter, wordCounter: counter) -> 
             continue
         emojiCounter.count(e)
     
-    return filtered
+    return filtered, len(words), len(emojis)
 
 @bot.command(name="count")
 @has_permissions(administrator=True)
@@ -107,8 +107,13 @@ async def count_command(ctx: Context):
     reactionCounter = counter()
     gifCounter = counter()
     mostReactedMessages: list[tuple[int, discord.Message]] = []
-
     mostActiveDays = counter()
+
+    messagesSent = 0
+    wordsTyped = 0
+    gifsSent = 0
+    emojisUsed = 0
+    reactionsApplied = 0
 
     # need to scan all of the channels
     for channel in ctx.guild.text_channels:
@@ -119,11 +124,15 @@ async def count_command(ctx: Context):
             if message.author == bot.user:
                 continue
             
+            messagesSent += 1
+
             # count the day
             mostActiveDays.count(message.created_at.date())
 
             # return value currently unused
-            _ = filterMessage(message.content, emojiCounter, wordCounter)
+            _, wordsTypedInMessage, emojisUsedInMessage = filterMessage(message.content, emojiCounter, wordCounter)
+            wordsTyped += wordsTypedInMessage
+            emojisUsed += emojisUsedInMessage
 
             # count user messages
             senders.count(message.author.id)
@@ -140,11 +149,13 @@ async def count_command(ctx: Context):
             if reactions > 0:
                 mostReactedMessages.append((reactions, message))
                 mostReactedMessages = sorted(mostReactedMessages, key=lambda x: x[0], reverse=True)[:5]
+            reactionsApplied += reactions
 
             # count all the gifs
             for embed in message.embeds:
                 if embed.type == "gifv":
                     gifCounter.count(embed.url)
+                    gifsSent += 1
 	
     # sort each counter to get only the top results
     emojiCounterSorted = sorted(emojiCounter, key=lambda x: x[1], reverse=True)[:8]
@@ -194,6 +205,13 @@ async def count_command(ctx: Context):
     await ctx.send("### Daily activity over the past year:\n*on that sigma grindset*", file=activityImage)
 
     msg = "## And, some more little things...\n*please, sir, can i have some more? ;-;*\n"
+    msg += f"""
+**Messages sent:** {messagesSent}
+**Words typed:** {wordsTyped}
+**Gifs sent:** {gifsSent}
+**Emoji's used:** {emojisUsed}
+**Reactions applied:** {reactionsApplied}
+"""
     msg += "\n### Top 8 most popular emojis:\n*oh, dearest penisbee; wherefore art thou?*\n"
     msg += "\n".join(f"    \\- {w}: {c}" for w, c in emojiCounterSorted)
     msg += "\n\n### Top 8 most popular reaction:\n*when the imposter is- UkGgh- eughh...*\n"
