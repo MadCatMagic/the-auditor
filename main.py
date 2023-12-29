@@ -204,6 +204,25 @@ async def count_command(ctx: Context):
     # send activity data
     await ctx.send("### Daily activity over the past year:\n*on that sigma grindset*", file=activityImage)
 
+    # awards
+    msg = "## Time for the annual awards ceremony...\n*the most prestigious in the land*\n"
+
+    msg += "\n### The devil and angel/nicest and naughtiest Awards"
+    msg += f"\nAnd the award for most negativity goes to... {mostNegativePerson}! We hate you :)"
+    msg += f"\nAnd the award for most positivity goes to... {mostPositivePerson}! We hate you too, sicko."
+    
+    msg += "\n### \"i ain't reading that essay\" Award"
+    msg += f"\nAnd the award for the longest average message, \
+             an award created by Goose for the benefit of illiterates everywhere, goes to... {longestAverageMessage}! excellent job!"
+    
+    msg += "\n### Most Common Message Award"
+    msg += "\nOddly enough, this award does not go to a real person... not that there are any real people on this server."
+    msg += f"\nNevertheless, this award goes to... {mostCommonMessage[0]}, sent {mostCommonMessage[1]} times!"
+    msg += f"\nAs a special mention, this message was sent most often by {mostCommonMessageSender[0]}, a whole {mostCommonMessageSender[1]} times!"
+    
+    await ctx.send(msg)
+
+    # misc stuff
     msg = "## And, some more little things...\n*please, sir, can i have some more? ;-;*\n"
     msg += f"""
 **Total messages sent:** {messagesSent}
