@@ -235,7 +235,7 @@ async def count_command(ctx: Context):
     await ctx.send("### Daily activity over the past year:\n*on that sigma grindset*", file=activityImage)
 
     # awards
-    msg = "## Time for the annual awards ceremony...\n*the most prestigious in the land*\n"
+    msg = "## Time for the annual awards ceremony...\n*the most prestigious in the land*"
 
     positivityRanking = sorted(positivityCounter, key=lambda x: x[1])
     mostNegativePerson, mostPositivePerson = positivityRanking[0], positivityRanking[-1]
@@ -244,12 +244,11 @@ async def count_command(ctx: Context):
     msg += f"\nAnd the award for most positivity goes to... *{GetNameFromID(mostPositivePerson[0], ctx)}*, with a score of *{mostPositivePerson[1]}*! We hate you too, sicko."
     
     averageMessageLengths = sorted([(id, totMessageLength / numMessages) for (id, numMessages), (_, totMessageLength) in zip(senders, sendersTotalLength)], key=lambda x: x[1])
-    longestAverageMessage = GetNameFromID(averageMessageLengths[-1][0], ctx)
+    longestAverageMessage = (GetNameFromID(averageMessageLengths[-1][0], ctx), averageMessageLengths[-1][1])
     msg += "\n### \"i ain't reading that essay\" Award"
-    msg += f"\nAnd the award for the longest average message, \
-             an award created by Goose for the benefit of illiterates everywhere, goes to... *{longestAverageMessage}*! excellent job!"
+    msg += f"\nAnd the award for the longest average message, an award created by Goose for the benefit of illiterates everywhere, goes to... *{longestAverageMessage[0]}*, with an average message length of *{round(longestAverageMessage[1])}*! shut the fuck up."
     
-    allMessagesSorted = sorted(allMessageCounters, lambda x: x[1].sum())
+    allMessagesSorted = sorted(allMessageCounters.items(), key=lambda x: x[1].sum())
     mostCommonMessage = (allMessagesSorted[-1][0], allMessagesSorted[-1][1].sum())
     mostCommonMessageSenders = sorted(allMessagesSorted[-1][1], key=lambda x: x[1])
     mostCommonMessageSender = (GetNameFromID(mostCommonMessageSenders[-1][0]), mostCommonMessageSenders[-1][1])
