@@ -206,11 +206,11 @@ async def count_command(ctx: Context):
 
     msg = "## And, some more little things...\n*please, sir, can i have some more? ;-;*\n"
     msg += f"""
-**Messages sent:** {messagesSent}
-**Words typed:** {wordsTyped}
-**Gifs sent:** {gifsSent}
-**Emoji's used:** {emojisUsed}
-**Reactions applied:** {reactionsApplied}
+**Total messages sent:** {messagesSent}
+**Total words typed:** {wordsTyped}
+**Number of gifs sent:** {gifsSent}
+**Total emoji's used:** {emojisUsed}
+**Number of reactions applied:** {reactionsApplied}
 """
     msg += "\n### Top 8 most popular emojis:\n*oh, dearest penisbee; wherefore art thou?*\n"
     msg += "\n".join(f"    \\- {w}: {c}" for w, c in emojiCounterSorted)
